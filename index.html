@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+      background: #0a0f1c;
+      color: #e0e6f7;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2.2rem 1rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1 0 auto;
+      padding-bottom: 90px; /* Prevent content from being hidden behind footer */
+    }
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: #7df9ff;
+      text-shadow: 0 0 12px #0ff, 0 0 32px #0ff2;
+      margin-bottom: 0.5rem;
+      word-break: break-word;
+    }
+    .input-panel {
+      background: rgba(20,30,60,0.85);
+      border-radius: 18px;
+      box-shadow: 0 0 24px #0ff4, 0 0 2px #fff2;
+      padding: 2rem 2rem 1.5rem 2rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      box-sizing: border-box;
+    }
+    label {
+      font-size: 1.1rem;
+      color: #b3e6ff;
+      margin-bottom: 0.2rem;
+      word-break: break-word;
+    }
+    input[type="password"], select {
+      font-size: 1.1rem;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: none;
+      background: #181f2f;
+      color: #fff;
+      outline: none;
+      box-shadow: 0 0 8px #0ff2 inset;
+      margin-bottom: 0.5rem;
+    }
+    select {
+      width: 100%;
+    }
+    button {
+      font-family: inherit;
+      font-size: 1.2rem;
+      padding: 0.7rem 2.2rem;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, #0ff 0%, #7df9ff 100%);
+      color: #0a0f1c;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 0 16px #0ff8, 0 0 2px #fff2;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      margin-top: 0.5rem;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #7df9ff 0%, #0ff 100%);
+      color: #0a0f1c;
+    }
+    .results {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+      margin-top: 2rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .result-card {
+      background: rgba(20,30,60,0.92);
+      border-radius: 16px;
+      box-shadow: 0 0 18px #0ff3, 0 0 2px #fff2;
+      padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+      min-width: 260px;
+      max-width: 340px;
+      flex: 1 1 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
+    .result-card h2 {
+      font-size: 1.2rem;
+      color: #7df9ff;
+      margin-bottom: 0.7rem;
+      text-shadow: 0 0 8px #0ff2;
+      word-break: break-word;
+    }
+    .result-table {
+      width: 100%;
+      margin-bottom: 1rem;
+      table-layout: fixed;
+    }
+    .result-table td {
+      padding: 0.2rem 0.5rem;
+      font-size: 1.05rem;
+      color: #e0e6f7;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .result-table .label {
+      color: #b3e6ff;
+      font-size: 0.98rem;
+      word-break: break-word;
+    }
+    .math-formula {
+      margin-top: 0.7rem;
+      background: rgba(10,20,40,0.7);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      color: #fff;
+      font-size: 1.05rem;
+      text-align: center;
+      box-shadow: 0 0 8px #0ff2;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+    .bar-graph {
+      width: 100%;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .bar {
+      height: 18px;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #0ff 0%, #7df9ff 100%);
+      box-shadow: 0 0 8px #0ff4;
+      transition: width 0.7s cubic-bezier(.4,2,.6,1);
+      min-width: 8px;
+      max-width: 100%;
+    }
+    .bar-label {
+      font-size: 0.98rem;
+      color: #b3e6ff;
+      margin-bottom: 0.2rem;
+      word-break: break-word;
+    }
+    .footer {
+      width: 100%;
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      background: rgba(10,20,40,0.7);
+      border-top: 1px solid #0ff3;
+      box-shadow: 0 0 12px #0ff2;
+      text-align: center;
+      color: #7df9ff;
+      font-size: 1.05rem;
+      padding: 1.2rem 0 0.7rem 0;
+      z-index: 10;
+    }
+    .footer a {
+      color: #7df9ff;
+      text-decoration: underline;
+      margin: 0 0.5rem;
+      transition: color 0.2s;
+    }
+    .footer a:hover {
+      color: #fff;
+    }
+    input[type="text"] {
+      font-size: 1.25rem;
+      padding: 1.1rem 1.2rem;
+      border-radius: 14px;
+      border: none;
+      background: #181f2f;
+      color: #fff;
+      outline: none;
+      box-shadow: 0 0 12px #0ff2 inset, 0 0 0px #0ff0;
+      margin-bottom: 0.5rem;
+      width: 100%;
+      transition: box-shadow 0.25s, border 0.25s, background 0.25s, color 0.25s, transform 0.18s cubic-bezier(.4,2,.6,1);
+      font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+      letter-spacing: 1.2px;
+      box-sizing: border-box;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    input[type="text"]:focus {
+      background: #10182a;
+      color: #7df9ff;
+      box-shadow: 0 0 0 2px #0ff, 0 0 18px #0ff6, 0 0 32px #0ff2 inset;
+      border: 1.5px solid #0ff;
+      transform: scale(1.03);
+    }
+    input[type="text"]::placeholder {
+      color: #7df9ffcc;
+      opacity: 1;
+      font-size: 1.1rem;
+      letter-spacing: 1.1px;
+    }
+    @media (max-width: 900px) {
+      .container { max-width: 98vw; padding: 1.2rem 0.2rem; }
+      .input-panel { max-width: 98vw; padding: 1.2rem 0.7rem; }
+      .results { gap: 1rem; }
+      .result-card { min-width: 90vw; max-width: 98vw; }
+      .math-formula { font-size: 0.98rem; }
+      h1 { font-size: 1.2rem; }
+      .footer { font-size: 0.98rem; padding: 1rem 0 0.5rem 0; }
+      .container { padding-bottom: 100px; }
+    }
+    @media (max-width: 500px) {
+      .container { padding: 0.5rem 0.1rem; }
+      .input-panel { padding: 0.7rem 0.2rem; }
+      .result-card { padding: 0.7rem 0.2rem; }
+      .math-formula { font-size: 0.92rem; }
+      input[type="text"] { font-size: 1rem; padding: 0.7rem 0.7rem; }
+      .footer { font-size: 0.92rem; padding: 0.7rem 0 0.3rem 0; }
+      .container { padding-bottom: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="container">
+    <div style="text-align:center; margin-bottom: 0.5rem;">
+      <span style="font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif; font-size: 2.7rem; color: #7df9ff; text-shadow: 0 0 18px #0ff, 0 0 32px #0ff2; letter-spacing: 3px; font-weight: bold;">Qrack</span>
+    </div>
+    <h1 style="font-size:1.3rem; color:#b3e6ff; text-shadow:0 0 8px #0ff2; margin-bottom:1.2rem;">Quantum Password Cracking Estimator</h1>
+    <form class="input-panel" id="password-form" autocomplete="off">
+      <div>
+        <label for="pw1">Password:</label>
+        <input type="text" id="pw1" maxlength="20" placeholder="Enter your password">
+      </div>
+      <button type="submit">Estimate Crack Time</button>
+    </form>
+    <div class="results" id="results"></div>
+    <div id="download-btns" style="display:none; margin: 1.2rem 0 0.5rem 0; justify-content: center; align-items: center; gap: 0.7rem; flex-wrap: wrap; display: flex; width: 100%;"></div>
+    <div class="footer">
+      <div>Connect with me:<br>
+        <a href="https://www.instagram.com/realarthjaiswal/" target="_blank">Instagram</a> |
+        <a href="https://www.linkedin.com/in/arth-jaiswal-116357212/" target="_blank">LinkedIn</a> |
+        <a href="mailto:contactarthj@gmail.com">Email</a> |
+        <a href="https://x.com/Xrth" target="_blank">Twitter (X)</a> |
+        <a href="https://substack.com/@arthjaiswal" target="_blank">Substack</a> |
+        <a href="https://www.threads.net/@realarthjaiswal" target="_blank">Threads</a>
+      </div>
+      <div style="margin-top:0.7rem;font-size:0.95rem;opacity:0.7;">&copy; 2024 Arth Jaiswal</div>
+    </div>
+  </div>
+  <script>
+    // --- Three.js Futuristic Animation ---
+    let scene, camera, renderer, cube, animId;
+    function initThree() {
+      const canvas = document.getElementById('bg-canvas');
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+      camera.position.z = 7;
+      // Glowing cube
+      const geometry = new THREE.BoxGeometry(2.5,2.5,2.5);
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0x00fff7,
+        metalness: 0.7,
+        roughness: 0.2,
+        transmission: 0.7,
+        thickness: 0.7,
+        clearcoat: 1,
+        clearcoatRoughness: 0.1,
+        emissive: 0x00fff7,
+        emissiveIntensity: 0.5
+      });
+      cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+      // Glow effect
+      const glowGeo = new THREE.SphereGeometry(3.2, 32, 32);
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x00fff7, transparent: true, opacity: 0.08 });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      scene.add(glow);
+      // Lights
+      const light1 = new THREE.PointLight(0x00fff7, 1.2, 100);
+      light1.position.set(5, 5, 10);
+      scene.add(light1);
+      const light2 = new THREE.PointLight(0x7df9ff, 0.7, 100);
+      light2.position.set(-5, -5, 10);
+      scene.add(light2);
+      animate();
+    }
+    function animate() {
+      animId = requestAnimationFrame(animate);
+      cube.rotation.x += 0.008;
+      cube.rotation.y += 0.012;
+      renderer.render(scene, camera);
+    }
+    function onResize() {
+      if (!renderer || !camera) return;
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('DOMContentLoaded', initThree);
+    // --- Password Crack Time Logic ---
+    function smartAttackEstimates(pw) {
+      // Granular scoring for more precise, sensitive estimation
+      let basePatterns = 1000000; // base for any password
+      let baseAvgGuesses = 500000;
+      let lengthBonus = Math.max(0, pw.length - 8) * 250000; // +250k patterns per char over 8
+      let digitBonus = (pw.match(/[0-9]/g) || []).length * 100000; // +100k per digit
+      let symbolBonus = (pw.match(/[^a-zA-Z0-9]/g) || []).length * 200000; // +200k per symbol
+      let upperBonus = (pw.match(/[A-Z]/g) || []).length * 120000; // +120k per uppercase
+      let lowerBonus = (pw.match(/[a-z]/g) || []).length * 50000; // +50k per lowercase
+      let varietyBonus = 0;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) varietyBonus += 200000;
+      if (/[0-9]/.test(pw) && /[a-zA-Z]/.test(pw)) varietyBonus += 200000;
+      if (/[^a-zA-Z0-9]/.test(pw)) varietyBonus += 200000;
+      // Penalize for repeated chars (less secure)
+      let repeats = pw.length - new Set(pw).size;
+      let repeatPenalty = repeats * 100000;
+      // Final pattern/guess count
+      let patterns = basePatterns + lengthBonus + digitBonus + symbolBonus + upperBonus + lowerBonus + varietyBonus - repeatPenalty;
+      patterns = Math.max(100000, patterns); // never below 100k
+      let avgGuesses = Math.floor(patterns / 2);
+      // Supercomputer: 1e12 guesses/sec
+      const t_super = avgGuesses / 1e12;
+      // Quantum: sqrt(avgGuesses) / 1e12
+      const t_quantum = Math.sqrt(avgGuesses) / 1e12;
+      return { patterns, avgGuesses, t_super, t_quantum };
+    }
+    function formatDuration(seconds) {
+      if (seconds === 0) return '0 seconds';
+      if (seconds < 1e-6) return `${(seconds*1e9).toFixed(2)} ns`;
+      if (seconds < 1e-3) return `${(seconds*1e6).toFixed(2)} μs`;
+      if (seconds < 1) return `${(seconds*1000).toFixed(2)} ms`;
+      const units = [
+        { label: 'years', value: 365*24*3600 },
+        { label: 'days', value: 24*3600 },
+        { label: 'hours', value: 3600 },
+        { label: 'minutes', value: 60 },
+        { label: 'seconds', value: 1 }
+      ];
+      let s = '';
+      for (const u of units) {
+        if (seconds >= u.value) {
+          const v = Math.floor(seconds / u.value);
+          seconds -= v * u.value;
+          s += `${v} ${u.label} `;
+        }
+      }
+      return s.trim() || '0 seconds';
+    }
+    function renderResultCardSmartOnly(pw, smartRes) {
+      return `
+        <div class="result-card" id="result-card-main" style="min-width:unset;max-width:100%;">
+          <div style="font-size:1.15rem;margin-bottom:0.7rem;"><b>🔐 Password:</b> <span style="word-break:break-all;">${pw ? pw : '<em>empty</em>'}</span></div>
+          <div style="margin-bottom:0.7rem;"><b>🎯 Real-World Smart Attack (Pattern-Based)</b></div>
+          <div style="font-size:1.05rem;margin-bottom:0.3rem;">- Estimated Patterns Tried: <b>${smartRes.patterns.toLocaleString('en')}</b></div>
+          <div style="font-size:1.05rem;margin-bottom:0.3rem;">- Average Guesses: <b>${smartRes.avgGuesses.toLocaleString('en')}</b></div>
+          <div style="font-size:1.05rem;margin-bottom:0.3rem;">- Supercomputer Time: <b>${formatDuration(smartRes.t_super)}</b></div>
+          <div style="font-size:1.05rem;margin-bottom:0.3rem;">- Quantum Computer (Grover's): <b>${formatDuration(smartRes.t_quantum)}</b></div>
+        </div>
+        <div style="margin:1.1rem 0 0 0; font-size:0.98rem; color:#7df9ff; background:rgba(10,20,40,0.7); border-radius:8px; padding:0.7rem 1rem; max-width:500px; margin-left:auto; margin-right:auto; text-align:left;">
+          <b>What do nanoseconds (ns) and microseconds (μs) mean?</b><br>
+          <ul style='margin:0.3em 0 0 1.2em; padding:0; color:#b3e6ff; font-size:0.97em;'>
+            <li><b>1 nanosecond (ns)</b> = one billionth of a second (0.000 000 001 s)</li>
+            <li><b>1 microsecond (μs)</b> = one millionth of a second (0.000 001 s)</li>
+            <li>For comparison: a blink of an eye takes about 100,000,000 ns (0.1 s)</li>
+          </ul>
+        </div>
+      `;
+    }
+    document.getElementById('password-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const pw1 = document.getElementById('pw1').value;
+      const resultsDiv = document.getElementById('results');
+      const downloadBtns = document.getElementById('download-btns');
+      if (!pw1) {
+        resultsDiv.innerHTML = '<em>Please enter a password.</em>';
+        downloadBtns.style.display = 'none';
+        return;
+      }
+      const smartRes = smartAttackEstimates(pw1);
+      resultsDiv.innerHTML = renderResultCardSmartOnly(pw1, smartRes);
+      setTimeout(() => {
+        downloadBtns.innerHTML = `
+          <button id="dl-png">Download PNG</button>
+          <button id="dl-jpg">Download JPG</button>
+          <button id="dl-pdf">Download PDF</button>
+        `;
+        downloadBtns.style.display = 'flex';
+        addDownloadListeners();
+      }, 400);
+    });
+  </script>
+  <script>
+    // --- Download functionality ---
+    function addDownloadListeners() {
+      const card = document.getElementById('result-card-main');
+      if (!card) return;
+      const scale = window.devicePixelRatio || 2;
+      // Helper to get image from card
+      function getImageDataURL(type = 'png', quality = 1) {
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${card.offsetWidth*scale}' height='${card.offsetHeight*scale}'>
+          <foreignObject width='100%' height='100%'>${new XMLSerializer().serializeToString(card)}</foreignObject>
+        </svg>`;
+        const img = new window.Image();
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        return new Promise(resolve => {
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = card.offsetWidth*scale;
+            canvas.height = card.offsetHeight*scale;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#181f2f';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (type === 'jpg') {
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } else {
+              resolve(canvas.toDataURL('image/png'));
+            }
+          };
+        });
+      }
+      // PNG
+      const pngBtn = document.getElementById('dl-png');
+      if (pngBtn) pngBtn.onclick = async function() {
+        const url = await getImageDataURL('png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'qrack-result.png';
+        a.click();
+      };
+      // JPG
+      const jpgBtn = document.getElementById('dl-jpg');
+      if (jpgBtn) jpgBtn.onclick = async function() {
+        const url = await getImageDataURL('jpg');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'qrack-result.jpg';
+        a.click();
+      };
+      // PDF
+      const pdfBtn = document.getElementById('dl-pdf');
+      if (pdfBtn) pdfBtn.onclick = async function() {
+        const url = await getImageDataURL('png');
+        const pdf = new window.jspdf.jsPDF({orientation:'p',unit:'px',format:[card.offsetWidth*scale,card.offsetHeight*scale]});
+        pdf.addImage(url, 'PNG', 0, 0, card.offsetWidth*scale, card.offsetHeight*scale);
+        pdf.save('qrack-result.pdf');
+      };
+    }
+    // --- Load jsPDF for PDF download ---
+    (function(){
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html> 
