@@ -440,35 +440,72 @@
     function addDownloadListeners() {
       const card = document.getElementById('result-card-main');
       if (!card) return;
-      const scale = window.devicePixelRatio || 2;
-      // Helper to get image from card
-      function getImageDataURL(type = 'png', quality = 1) {
-        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${card.offsetWidth*scale}' height='${card.offsetHeight*scale}'>
-          <foreignObject width='100%' height='100%'>${new XMLSerializer().serializeToString(card)}</foreignObject>
-        </svg>`;
-        const img = new window.Image();
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-        return new Promise(resolve => {
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = card.offsetWidth*scale;
-            canvas.height = card.offsetHeight*scale;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#181f2f';
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            if (type === 'jpg') {
-              resolve(canvas.toDataURL('image/jpeg', quality));
-            } else {
-              resolve(canvas.toDataURL('image/png'));
-            }
-          };
-        });
+      // --- Custom Canvas Drawing for Export ---
+      function drawCardToCanvas(type = 'png', quality = 1) {
+        // Extract data from the card
+        const pw = card.querySelector('span')?.textContent || '';
+        const stats = Array.from(card.querySelectorAll('div')).map(d => d.textContent);
+        // Canvas settings
+        const width = 700, height = 420, pad = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(2,2);
+        // Background
+        ctx.fillStyle = '#181f2f';
+        ctx.fillRect(0,0,width,height);
+        // Card background
+        ctx.save();
+        ctx.shadowColor = '#0ff3';
+        ctx.shadowBlur = 24;
+        ctx.fillStyle = 'rgba(20,30,60,0.92)';
+        ctx.strokeStyle = '#0ff4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(pad, pad, width-2*pad, height-2*pad, 18);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        // Title
+        ctx.font = 'bold 1.35rem Orbitron, Segoe UI, Arial';
+        ctx.fillStyle = '#7df9ff';
+        ctx.shadowColor = '#0ff';
+        ctx.shadowBlur = 8;
+        ctx.fillText('🔐 Password:', pad+24, pad+48);
+        ctx.shadowBlur = 0;
+        ctx.font = '1.1rem Orbitron, Segoe UI, Arial';
+        ctx.fillStyle = '#e0e6f7';
+        ctx.fillText(pw, pad+170, pad+48);
+        // Subtitle
+        ctx.font = 'bold 1.1rem Orbitron, Segoe UI, Arial';
+        ctx.fillStyle = '#7df9ff';
+        ctx.fillText('🎯 Real-World Smart Attack (Pattern-Based)', pad+24, pad+90);
+        // Stats
+        ctx.font = '1.05rem Segoe UI, Arial';
+        ctx.fillStyle = '#e0e6f7';
+        let y = pad+130;
+        for (let i=2; i<stats.length; ++i) {
+          ctx.fillText(stats[i], pad+32, y);
+          y += 36;
+        }
+        // Footer/branding
+        ctx.font = '0.98rem Orbitron, Segoe UI, Arial';
+        ctx.fillStyle = '#7df9ff';
+        ctx.globalAlpha = 0.7;
+        ctx.fillText('Qrack Quantum Password Estimator', pad+24, height-pad+18);
+        ctx.globalAlpha = 1;
+        // Return data URL
+        if (type === 'jpg') {
+          return canvas.toDataURL('image/jpeg', quality);
+        } else {
+          return canvas.toDataURL('image/png');
+        }
       }
       // PNG
       const pngBtn = document.getElementById('dl-png');
       if (pngBtn) pngBtn.onclick = async function() {
-        const url = await getImageDataURL('png');
+        const url = drawCardToCanvas('png');
         const a = document.createElement('a');
         a.href = url;
         a.download = 'qrack-result.png';
@@ -477,7 +514,7 @@
       // JPG
       const jpgBtn = document.getElementById('dl-jpg');
       if (jpgBtn) jpgBtn.onclick = async function() {
-        const url = await getImageDataURL('jpg');
+        const url = drawCardToCanvas('jpg');
         const a = document.createElement('a');
         a.href = url;
         a.download = 'qrack-result.jpg';
@@ -486,9 +523,9 @@
       // PDF
       const pdfBtn = document.getElementById('dl-pdf');
       if (pdfBtn) pdfBtn.onclick = async function() {
-        const url = await getImageDataURL('png');
-        const pdf = new window.jspdf.jsPDF({orientation:'p',unit:'px',format:[card.offsetWidth*scale,card.offsetHeight*scale]});
-        pdf.addImage(url, 'PNG', 0, 0, card.offsetWidth*scale, card.offsetHeight*scale);
+        const url = drawCardToCanvas('png');
+        const pdf = new window.jspdf.jsPDF({orientation:'p',unit:'px',format:[700,420]});
+        pdf.addImage(url, 'PNG', 0, 0, 700, 420);
         pdf.save('qrack-result.pdf');
       };
     }
